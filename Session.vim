@@ -28,11 +28,11 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 22 - ((19 * winheight(0) + 39) / 78)
+let s:l = 76 - ((42 * winheight(0) + 39) / 78)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-22
+76
 normal! 0
 tabnext 1
 badd +0 app.py
