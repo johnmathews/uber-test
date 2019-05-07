@@ -28,12 +28,12 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 213 - ((57 * winheight(0) + 31) / 62)
+let s:l = 212 - ((51 * winheight(0) + 31) / 62)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-213
-normal! 0
+212
+normal! 036|
 tabnext 1
 badd +0 app.py
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
@@ -47,6 +47,7 @@ if file_readable(s:sx)
   exe "source " . fnameescape(s:sx)
 endif
 let &so = s:so_save | let &siso = s:siso_save
+nohlsearch
 let g:this_session = v:this_session
 let g:this_obsession = v:this_session
 let g:this_obsession_status = 2

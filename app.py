@@ -201,13 +201,18 @@ def update_output_div(dates_dropdown, metrics_dropdown):
     [Input(component_id='metrics_dropdown', component_property='value')]
 )
 def update_figure(selected_metric):
-    filtered_df = df[df.region_x == 'EMEA - WSE'][['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
-    print(filtered_df.head())
-    traces = [go.Scatter(
-        x = filtered_df.week_start,
-        y = filtered_df[selected_metric],
-        name = selected_metric
-    )]
+    regions = df[df.region_x != 'EMEA'].region_x.unique()
+    filtered_data_frames = {}
+    traces = []
+
+    for region in regions:
+        filtered_data_frame = df[df.region_x == region][['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
+        traces.append(go.Scatter(
+            x = filtered_data_frame.week_start,
+            y = filtered_data_frame[selected_metric],
+            name = region
+        ))
+
     return {'data': traces, 'layout': go.Layout()}
 
 
