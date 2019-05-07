@@ -5,6 +5,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 
+import json
 from datetime import timedelta as td
 from datetime import datetime
 import pandas as pd
@@ -16,6 +17,7 @@ df = df.sort_values(by='week_start', ascending=True)
 
 available_metrics = df.columns[5:]
 available_dates = [np.datetime64(x, 'D') for x in  df.week_start.unique()]
+available_regions = df[df.region_x != 'EMEA'].region_x.unique()
 
 def total_of_metric(region, metric, week):
     if region == 'EMEA':
@@ -128,8 +130,21 @@ app.layout = html.Div([
         html.Div( id='NEE_total', children='start', style=total_style_dict),
     ]),
     html.Div([
-        dcc.Graph(id="figure-1")
-    ])
+        dcc.Graph(id="regions"),
+        ],
+        style={
+            'display': 'inline-block',
+            'width': '40%',
+              }
+    ),
+    html.Div([
+        dcc.Graph(id="sub-regions"),
+        ],
+        style={
+            'display': 'inline-block',
+            'width': '40%',
+              }
+    )
 ])
 
 @app.callback(
@@ -197,12 +212,11 @@ def update_output_div(dates_dropdown, metrics_dropdown):
     return metric_change_week_on_week('EMEA - NEE', metrics_dropdown, dates_dropdown)
 
 @app.callback(
-    Output(component_id='figure-1', component_property='figure'),
+    Output(component_id='regions', component_property='figure'),
     [Input(component_id='metrics_dropdown', component_property='value')]
 )
 def update_figure(selected_metric):
     regions = df[df.region_x != 'EMEA'].region_x.unique()
-    filtered_data_frames = {}
     traces = []
 
     for region in regions:
@@ -213,8 +227,30 @@ def update_figure(selected_metric):
             name = region
         ))
 
-    return {'data': traces, 'layout': go.Layout()}
 
+    return {'data': traces, 'layout': go.Layout(title=selected_metric, hovermode='closest', legend={'orientation':'h'},)}
+
+@app.callback(
+    Output(component_id='sub-regions', component_property='figure'),
+    [Input(component_id='regions', component_property='hoverData'),
+     Input(component_id='metrics_dropdown', component_property='value')]
+)
+def update_figure(hoverData, selected_metric):
+    region = hoverData['points'][0]['curveNumber']
+    region = available_regions[region]
+    sub_regions = df[df.region_x == region].sub_region_x.unique()
+    traces = []
+
+    for sub_region in sub_regions:
+        filtered_data_frame = df[df.sub_region_x == sub_region][['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
+        traces.append(go.Scatter(
+            x = filtered_data_frame.week_start,
+            y = filtered_data_frame[selected_metric],
+            name = sub_region
+        ))
+
+
+    return {'data': traces, 'layout': go.Layout(title=f'{region}, {selected_metric}', legend={'orientation':'h'})}
 
 if __name__ == '__main__':
     app.run_server(debug=True)

@@ -28,12 +28,12 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 212 - ((51 * winheight(0) + 31) / 62)
+let s:l = 249 - ((77 * winheight(0) + 44) / 89)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-212
-normal! 036|
+249
+normal! 023|
 tabnext 1
 badd +0 app.py
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
