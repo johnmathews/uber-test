@@ -32,18 +32,12 @@ def metric_change_week_on_week(region, metric, week):
     if region == 'EMEA':
         weekly_total = df[df.week_start == current_week][[metric]].sum().item()
         previous_weekly_total = df[df.week_start == previous_week][[metric]].sum().item()
-        if weekly_total == 0 or previous_weekly_total == 0:
-            change = 'placeholder'
-        else:
-            change = round((weekly_total - previous_weekly_total) / previous_weekly_total,2)
+        change = 100 * ((weekly_total - previous_weekly_total) / previous_weekly_total)
     else:
         weekly_total = df[(df.week_start == current_week) & (df.region_x == region)][[metric]].sum().item()
         previous_weekly_total = df[(df.week_start == previous_week) & (df.region_x == region)][[metric]].sum().item()
-        if weekly_total == 0 or previous_weekly_total == 0:
-            change = 'placeholder'
-        else:
-            change = round((weekly_total - previous_weekly_total) / previous_weekly_total,2)
-    return f"change: {change}%"
+        change = 100 * ((weekly_total - previous_weekly_total) / previous_weekly_total)
+    return f"change: {round(change,2)}%"
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -130,7 +124,7 @@ app.layout = html.Div([
         html.Div( id='NEE_total', children='start', style=total_style_dict),
     ]),
     html.Div([
-        dcc.Graph(id="regions"),
+        dcc.Graph(id="regions", config={'displayModeBar': False}),
         ],
         style={
             'display': 'inline-block',
@@ -138,7 +132,7 @@ app.layout = html.Div([
               }
     ),
     html.Div([
-        dcc.Graph(id="sub-regions"),
+        dcc.Graph(id="sub-regions", config={'displayModeBar': False}),
         ],
         style={
             'display': 'inline-block',
@@ -224,7 +218,7 @@ def update_figure(selected_metric):
         traces.append(go.Scatter(
             x = filtered_data_frame.week_start,
             y = filtered_data_frame[selected_metric],
-            name = region
+            name = region[6:]
         ))
 
 
@@ -254,7 +248,7 @@ def update_figure(hoverData, selected_metric):
         ))
 
 
-    return {'data': traces, 'layout': go.Layout(title=region + f': {selected_metric}'.replace('_', ' ').title(), legend={'orientation':'h'})}
+    return {'data': traces, 'layout': go.Layout(title=region[6:] + f': {selected_metric}'.replace('_', ' ').title(), legend={'orientation':'h'})}
 
 if __name__ == '__main__':
     app.run_server(debug=True)
