@@ -95,7 +95,7 @@ app.layout = html.Div([
         html.Div(
             dcc.Dropdown(
                 id='metrics_dropdown',
-                options=[{'label': i, 'value': i} for i in available_metrics],
+                options=[{'label': i.replace('_', ' ').title(), 'value': i} for i in available_metrics],
                 value=available_metrics[0],
                 clearable=False,
                 style=dropdown_style
@@ -228,7 +228,7 @@ def update_figure(selected_metric):
         ))
 
 
-    return {'data': traces, 'layout': go.Layout(title=selected_metric, hovermode='closest', legend={'orientation':'h'},)}
+    return {'data': traces, 'layout': go.Layout(title=selected_metric.replace('_', ' ').title(), hovermode='closest', legend={'orientation':'h'},)}
 
 @app.callback(
     Output(component_id='sub-regions', component_property='figure'),
@@ -236,7 +236,11 @@ def update_figure(selected_metric):
      Input(component_id='metrics_dropdown', component_property='value')]
 )
 def update_figure(hoverData, selected_metric):
-    region = hoverData['points'][0]['curveNumber']
+    if hoverData:
+        region = hoverData['points'][0]['curveNumber']
+    else:
+        region = 0
+
     region = available_regions[region]
     sub_regions = df[df.region_x == region].sub_region_x.unique()
     traces = []
@@ -246,11 +250,11 @@ def update_figure(hoverData, selected_metric):
         traces.append(go.Scatter(
             x = filtered_data_frame.week_start,
             y = filtered_data_frame[selected_metric],
-            name = sub_region
+            name = sub_region.title()
         ))
 
 
-    return {'data': traces, 'layout': go.Layout(title=f'{region}, {selected_metric}', legend={'orientation':'h'})}
+    return {'data': traces, 'layout': go.Layout(title=region + f': {selected_metric}'.replace('_', ' ').title(), legend={'orientation':'h'})}
 
 if __name__ == '__main__':
     app.run_server(debug=True)
