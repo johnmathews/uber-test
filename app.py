@@ -3,6 +3,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+import plotly.graph_objs as go
 
 from datetime import timedelta as td
 from datetime import datetime
@@ -29,12 +30,18 @@ def metric_change_week_on_week(region, metric, week):
     if region == 'EMEA':
         weekly_total = df[df.week_start == current_week][[metric]].sum().item()
         previous_weekly_total = df[df.week_start == previous_week][[metric]].sum().item()
-        change = (weekly_total - previous_weekly_total) / previous_weekly_total
+        if weekly_total == 0 or previous_weekly_total == 0:
+            change = 'placeholder'
+        else:
+            change = round((weekly_total - previous_weekly_total) / previous_weekly_total,2)
     else:
         weekly_total = df[(df.week_start == current_week) & (df.region_x == region)][[metric]].sum().item()
         previous_weekly_total = df[(df.week_start == previous_week) & (df.region_x == region)][[metric]].sum().item()
-        change = (weekly_total - previous_weekly_total) / previous_weekly_total
-    return f"change: {round(100 * change, 2)}%"
+        if weekly_total == 0 or previous_weekly_total == 0:
+            change = 'placeholder'
+        else:
+            change = round((weekly_total - previous_weekly_total) / previous_weekly_total,2)
+    return f"change: {change}%"
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -73,14 +80,10 @@ total_style_dict = {
 }
 
 dropdown_style = {
-    #  'position': 'relative',
-    #  #  'display': 'inline-block',
-    #  'width': '130px',
-    #  'width': sub_total_width,
-    #  'align': 'right',
-    #  'backgroundColor': colors['background'],
-    #  'color': colors['text'],
-    #  #  'textAlign': 'center'
+    'margin-left': 'auto',
+    'position': 'relative',
+    'width': 200,
+    'align': 'right',
 }
 
 
@@ -92,6 +95,7 @@ app.layout = html.Div([
                 id='metrics_dropdown',
                 options=[{'label': i, 'value': i} for i in available_metrics],
                 value=available_metrics[0],
+                clearable=False,
                 style=dropdown_style
             ),
             style=dropdown_style
@@ -100,6 +104,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='dates_dropdown',
                 options=[{'label': i, 'value': i} for i in available_dates],
+                clearable=False,
                 value=available_dates[-1]
             ),
             style=dropdown_style
@@ -121,6 +126,9 @@ app.layout = html.Div([
         html.Div( id='WSE_total', children='start', style=total_style_dict),
         html.Div( id='NEE_change', children='start', style=total_style_dict),
         html.Div( id='NEE_total', children='start', style=total_style_dict),
+    ]),
+    html.Div([
+        dcc.Graph(id="figure-1")
     ])
 ])
 
@@ -187,6 +195,20 @@ def update_output_div(dates_dropdown, metrics_dropdown):
 )
 def update_output_div(dates_dropdown, metrics_dropdown):
     return metric_change_week_on_week('EMEA - NEE', metrics_dropdown, dates_dropdown)
+
+@app.callback(
+    Output(component_id='figure-1', component_property='figure'),
+    [Input(component_id='metrics_dropdown', component_property='value')]
+)
+def update_figure(selected_metric):
+    filtered_df = df[df.region_x == 'EMEA - WSE'][['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
+    print(filtered_df.head())
+    traces = [go.Scatter(
+        x = filtered_df.week_start,
+        y = filtered_df[selected_metric],
+        name = selected_metric
+    )]
+    return {'data': traces, 'layout': go.Layout()}
 
 
 if __name__ == '__main__':
