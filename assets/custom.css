@@ -1,0 +1,8 @@
+.Select-value, .Select-value-label, .Select-control {
+  background-color: black;
+  color: white !important;
+}
+
+body {
+    font-family: sans-serif;
+}

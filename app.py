@@ -40,8 +40,8 @@ def metric_change_week_on_week(region, metric, week):
     return f"change: {round(change,2)}%"
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+#  external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = dash.Dash(__name__)
 
 colors = {
     'background': '#111111',
@@ -227,7 +227,7 @@ def update_figure(selected_metric):
         ))
 
 
-    return {'data': traces, 'layout': go.Layout(title=selected_metric.replace('_', ' ').title(), hovermode='closest', legend={'orientation':'h'},)}
+    return {'data': traces, 'layout': go.Layout(title=selected_metric.replace('_', ' '), hovermode='closest', legend={'orientation':'h'},)}
 
 @app.callback(
     Output(component_id='sub-regions', component_property='figure'),
@@ -249,11 +249,11 @@ def update_figure(hoverData, selected_metric):
         traces.append(go.Scatter(
             x = filtered_data_frame.week_start,
             y = filtered_data_frame[selected_metric],
-            name = sub_region.title()
+            name = sub_region
         ))
 
 
-    return {'data': traces, 'layout': go.Layout(title=region[6:] + f': {selected_metric}'.replace('_', ' ').title(), legend={'orientation':'h'})}
+    return {'data': traces, 'layout': go.Layout(title=region[6:] + f': {selected_metric}'.replace('_', ' '), legend={'orientation':'h'})}
 
 if __name__ == '__main__':
     app.run_server(debug=True)
