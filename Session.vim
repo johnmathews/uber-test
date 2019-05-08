@@ -28,17 +28,16 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 242 - ((88 * winheight(0) + 53) / 106)
+let s:l = 133 - ((52 * winheight(0) + 53) / 106)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-242
+133
 normal! 0
 tabnext 1
-badd +45 app.py
-badd +8 override.css
-badd +3 assets/custom.css
-badd +1 assets/custom-script.js
+badd +133 app.py
+badd +1 assets/custom.css
+badd +55 Session.vim
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
   silent exe 'bwipe ' . s:wipebuf
 endif
@@ -50,6 +49,7 @@ if file_readable(s:sx)
   exe "source " . fnameescape(s:sx)
 endif
 let &so = s:so_save | let &siso = s:siso_save
+nohlsearch
 let g:this_session = v:this_session
 let g:this_obsession = v:this_session
 let g:this_obsession_status = 2

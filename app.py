@@ -11,6 +11,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
+# import data
 df = pd.read_csv('uber-data.csv', infer_datetime_format=True, parse_dates=[0])
 df.week_start = pd.to_datetime(df.week_start, infer_datetime_format=True)
 df = df.sort_values(by='week_start', ascending=True)
@@ -19,6 +20,7 @@ available_metrics = df.columns[5:]
 available_dates = [np.datetime64(x, 'D') for x in  df.week_start.unique()]
 available_regions = df[df.region_x != 'EMEA'].region_x.unique()
 
+# reusable components
 def total_of_metric(region, metric, week):
     if region == 'EMEA':
         result = df[df.week_start == week][[metric]].sum().item()
@@ -40,25 +42,20 @@ def metric_change_week_on_week(region, metric, week):
     return f"change: {round(change,2)}%"
 
 
-#  external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__)
+app = dash.Dash(__name__,  meta_tags=[
+        {"name": "viewport", "content": "width=device-width, initial-scale=1"}
+    ])
 
+# styling
 colors = {
     'background': '#111111',
     'text': '#FFFFFF'
 }
 
-region_width = '25%'
-sub_total_width = '12.5%'
-
-container_style = {
-    'maxWidth': 1000,
-}
-
 region_heading_style = {
     'margin': 5,
     'padding': 5,
-    'width': region_width,
+    'width': '25%',
     'display': 'flex',
     'flex-direction': 'row',
     'backgroundColor': colors['background'],
@@ -70,7 +67,7 @@ region_heading_style = {
 total_style_dict = {
     'margin': 5,
     'padding': 5,
-    'width': sub_total_width,
+    'width': '12.5%',
     'display': 'flex',
     'flex-direction': 'row',
     'backgroundColor': colors['background'],
@@ -83,16 +80,14 @@ dropdown_style = {
     'margin-left': '2%',
     'margin-right': '2%',
     'position': 'relative',
-    #  'width': '11.5%',
-    #  'padding': 5,
-    #  'margin': 5,
     'align': 'center',
     'display': 'inline',
 }
 
-
+# page structure - uses flexbox for responsive design
 app.layout = html.Div([
 
+    ## menues to select metric and week
     html.Div([
         html.Div(
             dcc.Dropdown(
@@ -100,7 +95,6 @@ app.layout = html.Div([
                 options=[{'label': i.replace('_', ' ').title(), 'value': i} for i in available_metrics],
                 value=available_metrics[0],
                 clearable=False,
-                #  style=dropdown_style
             ),
             style=dropdown_style
         ),
@@ -115,6 +109,7 @@ app.layout = html.Div([
         ),
     ], style={'display':'flex', 'flexDirection': 'column', 'width':'12.5%', 'margin-left': 'auto'}),
 
+    ## region/subregion titles
     html.Div([
         html.Div( children='EMEA', style=region_heading_style),
         html.Div( children='MEA', style=region_heading_style),
@@ -122,6 +117,7 @@ app.layout = html.Div([
         html.Div( children='NEE', style=region_heading_style),
     ], style={'display':'flex', 'flexDirection': 'row'}),
 
+    ## metric totals and metric weekly change
     html.Div([
         html.Div( id='EMEA_change', children='start', style=total_style_dict),
         html.Div( id='EMEA_total', children='start', style=total_style_dict),
@@ -133,19 +129,20 @@ app.layout = html.Div([
         html.Div( id='NEE_total', children='start', style=total_style_dict),
     ], style={'display':'flex', 'flexDirection': 'row'}),
 
+    ## line charts
     html.Div([
         html.Div([
             dcc.Graph(id="regions", config={'displayModeBar': False}),
-            ], style={'display':'flex', 'flexDirection': 'row'}
-        ),
+            ]),
         html.Div([
             dcc.Graph(id="sub-regions", config={'displayModeBar': False}),
-            ], style={'display':'flex', 'flexDirection': 'row'}
-        )
+            ])
     ], style={'display':'flex', 'flexDirection': 'row'})
 
 ], style={'display':'flex', 'flexDirection': 'column'})
 
+# callbacks for interactive features
+## totals and weekly change for selected metric and week
 @app.callback(
     Output(component_id='EMEA_total', component_property='children'),
     [Input(component_id='dates_dropdown', component_property='value'),
@@ -210,6 +207,7 @@ def update_output_div(dates_dropdown, metrics_dropdown):
 def update_output_div(dates_dropdown, metrics_dropdown):
     return metric_change_week_on_week('EMEA - NEE', metrics_dropdown, dates_dropdown)
 
+## region line chart
 @app.callback(
     Output(component_id='regions', component_property='figure'),
     [Input(component_id='metrics_dropdown', component_property='value')]
@@ -227,8 +225,9 @@ def update_figure(selected_metric):
         ))
 
 
-    return {'data': traces, 'layout': go.Layout(title=selected_metric.replace('_', ' '), hovermode='closest', legend={'orientation':'h'},)}
+    return {'data': traces, 'layout': go.Layout(title=selected_metric.replace('_', ' ').title(), autosize=True, hovermode='closest', legend={'orientation':'h'},)}
 
+## sub-region line chart
 @app.callback(
     Output(component_id='sub-regions', component_property='figure'),
     [Input(component_id='regions', component_property='hoverData'),
@@ -253,7 +252,8 @@ def update_figure(hoverData, selected_metric):
         ))
 
 
-    return {'data': traces, 'layout': go.Layout(title=region[6:] + f': {selected_metric}'.replace('_', ' '), legend={'orientation':'h'})}
+    return {'data': traces, 'layout': go.Layout(title=region[6:] + f': {selected_metric}'.replace('_', ' '), autosize=True, legend={'orientation':'h'})}
+
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
