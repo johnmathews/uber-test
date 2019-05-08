@@ -5,9 +5,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 
-import json
-from datetime import timedelta as td
-from datetime import datetime
+from datetime import datetime, timedelta as td
 import pandas as pd
 import numpy as np
 
@@ -20,6 +18,7 @@ available_metrics = df.columns[5:]
 available_dates = [np.datetime64(x, 'D') for x in  df.week_start.unique()]
 available_regions = df[df.region_x != 'EMEA'].region_x.unique()
 
+
 # reusable components
 def total_of_metric(region, metric, week):
     if region == 'EMEA':
@@ -27,6 +26,7 @@ def total_of_metric(region, metric, week):
     else:
         result = df[(df.week_start == week) & (df.region_x == region)][[metric]].sum().item()
     return f"total: {result:,}"
+
 
 def metric_change_week_on_week(region, metric, week):
     current_week = datetime.strptime(week, '%Y-%m-%d')

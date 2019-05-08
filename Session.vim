@@ -28,14 +28,14 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 133 - ((52 * winheight(0) + 53) / 106)
+let s:l = 30 - ((28 * winheight(0) + 50) / 100)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-133
+30
 normal! 0
 tabnext 1
-badd +133 app.py
+badd +0 app.py
 badd +1 assets/custom.css
 badd +55 Session.vim
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
