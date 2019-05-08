@@ -28,12 +28,12 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 30 - ((28 * winheight(0) + 50) / 100)
+let s:l = 267 - ((103 * winheight(0) + 53) / 106)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-30
-normal! 0
+267
+normal! 031|
 tabnext 1
 badd +0 app.py
 badd +1 assets/custom.css
