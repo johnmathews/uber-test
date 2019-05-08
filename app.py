@@ -48,8 +48,8 @@ colors = {
     'text': '#FFFFFF'
 }
 
-region_width = '22%'
-sub_total_width = '11%'
+region_width = '25%'
+sub_total_width = '12.5%'
 
 container_style = {
     'maxWidth': 1000,
@@ -59,27 +59,35 @@ region_heading_style = {
     'margin': 5,
     'padding': 5,
     'width': region_width,
-    'display': 'inline-block',
+    'display': 'flex',
+    'flex-direction': 'row',
     'backgroundColor': colors['background'],
     'color': colors['text'],
     'textAlign': 'center',
+    'borderRadius': 3
 }
 
 total_style_dict = {
     'margin': 5,
     'padding': 5,
     'width': sub_total_width,
-    'display': 'inline-block',
+    'display': 'flex',
+    'flex-direction': 'row',
     'backgroundColor': colors['background'],
     'color': colors['text'],
-    'textAlign': 'center'
+    'textAlign': 'center',
+    'borderRadius': 3,
 }
 
 dropdown_style = {
-    'margin-left': 'auto',
+    'margin-left': '2%',
+    'margin-right': '2%',
     'position': 'relative',
-    'width': 200,
-    'align': 'right',
+    #  'width': '11.5%',
+    #  'padding': 5,
+    #  'margin': 5,
+    'align': 'center',
+    'display': 'inline',
 }
 
 
@@ -92,7 +100,7 @@ app.layout = html.Div([
                 options=[{'label': i.replace('_', ' ').title(), 'value': i} for i in available_metrics],
                 value=available_metrics[0],
                 clearable=False,
-                style=dropdown_style
+                #  style=dropdown_style
             ),
             style=dropdown_style
         ),
@@ -105,14 +113,15 @@ app.layout = html.Div([
             ),
             style=dropdown_style
         ),
-    ]),
+    ], style={'display':'flex', 'flexDirection': 'column', 'width':'12.5%', 'margin-left': 'auto'}),
 
     html.Div([
         html.Div( children='EMEA', style=region_heading_style),
         html.Div( children='MEA', style=region_heading_style),
         html.Div( children='WSE', style=region_heading_style),
         html.Div( children='NEE', style=region_heading_style),
-    ]),
+    ], style={'display':'flex', 'flexDirection': 'row'}),
+
     html.Div([
         html.Div( id='EMEA_change', children='start', style=total_style_dict),
         html.Div( id='EMEA_total', children='start', style=total_style_dict),
@@ -122,24 +131,20 @@ app.layout = html.Div([
         html.Div( id='WSE_total', children='start', style=total_style_dict),
         html.Div( id='NEE_change', children='start', style=total_style_dict),
         html.Div( id='NEE_total', children='start', style=total_style_dict),
-    ]),
+    ], style={'display':'flex', 'flexDirection': 'row'}),
+
     html.Div([
-        dcc.Graph(id="regions", config={'displayModeBar': False}),
-        ],
-        style={
-            'display': 'inline-block',
-            'width': '40%',
-              }
-    ),
-    html.Div([
-        dcc.Graph(id="sub-regions", config={'displayModeBar': False}),
-        ],
-        style={
-            'display': 'inline-block',
-            'width': '40%',
-              }
-    )
-])
+        html.Div([
+            dcc.Graph(id="regions", config={'displayModeBar': False}),
+            ], style={'display':'flex', 'flexDirection': 'row'}
+        ),
+        html.Div([
+            dcc.Graph(id="sub-regions", config={'displayModeBar': False}),
+            ], style={'display':'flex', 'flexDirection': 'row'}
+        )
+    ], style={'display':'flex', 'flexDirection': 'row'})
+
+], style={'display':'flex', 'flexDirection': 'column'})
 
 @app.callback(
     Output(component_id='EMEA_total', component_property='children'),
