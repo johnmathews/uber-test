@@ -77,34 +77,23 @@ app = dash.Dash(__name__,  meta_tags=[
     ])
 
 # styling
-colors = {
-    'background': '#111111',
-    'text': '#FFFFFF'
-}
-
-region_heading_style = {
+default_style = {
     'margin': 5,
     'padding': 5,
-    'width': '25%',
     'display': 'flex',
     'flex-direction': 'row',
-    'backgroundColor': colors['background'],
-    'color': colors['text'],
-    'textAlign': 'center',
-    'borderRadius': 3
-}
-
-total_style_dict = {
-    'margin': 5,
-    'padding': 5,
-    'width': '12.5%',
-    'display': 'flex',
-    'flex-direction': 'row',
-    'backgroundColor': colors['background'],
-    'color': colors['text'],
+    'backgroundColor': '#111111',
+    'color': '#FFFFFF',
     'textAlign': 'center',
     'borderRadius': 3,
+    'width': '12.5%',
 }
+
+region_heading_style = default_style.copy()
+region_heading_style['width'] = '25%'
+
+metrics_style = default_style.copy()
+metrics_style['width'] = '12.5%'
 
 dropdown_style = {
     'margin-left': '2%',
@@ -146,7 +135,7 @@ app.layout = html.Div([
 
     # region metrics; total, change
     html.Div(
-        [html.Div(id=metric, children='start', style=total_style_dict) for metric in metrics_for_each_region]
+        [html.Div(id=metric, children='start', style=metrics_style) for metric in metrics_for_each_region]
     , style={'display': 'flex', 'flexDirection': 'row'}),
 
     # line charts
@@ -162,11 +151,12 @@ app.layout = html.Div([
 ], style={'display': 'flex', 'flexDirection': 'column'})
 
 
-# callbacks for weekly region totals and change
-[responsive_metrics(region) for region in region_names]
+# callbacks for weekly region totals and change, must come after `app.layout` has been defined
+for region in region_names:
+    responsive_metrics(region)
 
 
-# region line chart
+# callbacks for line charts
 @app.callback(
     Output(component_id='regions', component_property='figure'),
     [Input(component_id='metrics_dropdown', component_property='value')]
@@ -193,7 +183,6 @@ def update_figure(selected_metric):
             }
 
 
-# sub-region line chart
 @app.callback(
     Output(component_id='sub-regions', component_property='figure'),
     [Input(component_id='regions', component_property='hoverData'),
