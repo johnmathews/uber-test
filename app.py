@@ -20,6 +20,13 @@ available_regions = df[df.region_x != 'EMEA'].region_x.unique()
 
 
 # reusable components
+region_names = ['EMEA', 'MEA', 'WSE', 'NEE']
+region_names_long = ['EMEA', 'EMEA - MEA', 'EMEA - WSE', 'EMEA - NEE']
+metric_names = ['_change', '_total']
+metrics_for_each_region = [x+i for x in region_names for i in metric_names]
+
+
+# calculate weekly total
 def total_of_metric(region, metric, week):
     if region == 'EMEA':
         result = df[df.week_start == week][[metric]].sum().item()
@@ -28,6 +35,7 @@ def total_of_metric(region, metric, week):
     return f"total: {result:,}"
 
 
+# calculate week on week change
 def metric_change_week_on_week(region, metric, week):
     current_week = datetime.strptime(week, '%Y-%m-%d')
     previous_week = current_week - td(days=7)
@@ -40,6 +48,28 @@ def metric_change_week_on_week(region, metric, week):
         previous_weekly_total = df[(df.week_start == previous_week) & (df.region_x == region)][[metric]].sum().item()
         change = 100 * ((weekly_total - previous_weekly_total) / previous_weekly_total)
     return f"change: {round(change,2)}%"
+
+
+# generate callbacks for each region
+def responsive_metrics(name):
+    if name != 'EMEA':
+        long_name = f'EMEA - {name}'
+    else:
+        long_name = name
+
+    @app.callback(
+        Output(component_id=f'{name}_total', component_property='children'),
+        [Input(component_id='dates_dropdown', component_property='value'),
+         Input(component_id='metrics_dropdown', component_property='value')])
+    def update_output_div(dates_dropdown, metrics_dropdown):
+        return total_of_metric(long_name, metrics_dropdown, dates_dropdown)
+
+    @app.callback(
+        Output(component_id=f'{name}_change', component_property='children'),
+        [Input(component_id='dates_dropdown', component_property='value'),
+         Input(component_id='metrics_dropdown', component_property='value')])
+    def update_output_div(dates_dropdown, metrics_dropdown):
+        return metric_change_week_on_week(long_name, metrics_dropdown, dates_dropdown)
 
 
 app = dash.Dash(__name__,  meta_tags=[
@@ -109,25 +139,15 @@ app.layout = html.Div([
         ),
     ], style={'display': 'flex', 'flexDirection': 'column', 'width': '12.5%', 'margin-left': 'auto'}),
 
-    # region/subregion titles
-    html.Div([
-        html.Div(children='EMEA', style=region_heading_style),
-        html.Div(children='MEA', style=region_heading_style),
-        html.Div(children='WSE', style=region_heading_style),
-        html.Div(children='NEE', style=region_heading_style),
-    ], style={'display': 'flex', 'flexDirection': 'row'}),
+    # region titles
+    html.Div(
+        [html.Div(children=region, style=region_heading_style) for region in region_names]
+    , style={'display': 'flex', 'flexDirection': 'row'}),
 
-    # metric totals and metric weekly change
-    html.Div([
-        html.Div(id='EMEA_change', children='start', style=total_style_dict),
-        html.Div(id='EMEA_total', children='start', style=total_style_dict),
-        html.Div(id='MEA_change', children='start', style=total_style_dict),
-        html.Div(id='MEA_total', children='start', style=total_style_dict),
-        html.Div(id='WSE_change', children='start', style=total_style_dict),
-        html.Div(id='WSE_total', children='start', style=total_style_dict),
-        html.Div(id='NEE_change', children='start', style=total_style_dict),
-        html.Div(id='NEE_total', children='start', style=total_style_dict),
-    ], style={'display': 'flex', 'flexDirection': 'row'}),
+    # region metrics; total, change
+    html.Div(
+        [html.Div(id=metric, children='start', style=total_style_dict) for metric in metrics_for_each_region]
+    , style={'display': 'flex', 'flexDirection': 'row'}),
 
     # line charts
     html.Div([
@@ -142,78 +162,8 @@ app.layout = html.Div([
 ], style={'display': 'flex', 'flexDirection': 'column'})
 
 
-# callbacks for interactive features
-# totals and weekly change update on selected metric and week
-@app.callback(
-    Output(component_id='EMEA_total', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return total_of_metric('EMEA', metrics_dropdown, dates_dropdown)
-
-
-@app.callback(
-    Output(component_id='EMEA_change', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return metric_change_week_on_week('EMEA', metrics_dropdown, dates_dropdown)
-
-
-@app.callback(
-    Output(component_id='MEA_total', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return total_of_metric('EMEA - MEA', metrics_dropdown, dates_dropdown)
-
-
-@app.callback(
-    Output(component_id='MEA_change', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return metric_change_week_on_week('EMEA - MEA', metrics_dropdown, dates_dropdown)
-
-
-@app.callback(
-    Output(component_id='WSE_total', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return total_of_metric('EMEA - WSE', metrics_dropdown, dates_dropdown)
-
-
-@app.callback(
-    Output(component_id='WSE_change', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return metric_change_week_on_week('EMEA - WSE', metrics_dropdown, dates_dropdown)
-
-
-@app.callback(
-    Output(component_id='NEE_total', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return total_of_metric('EMEA - NEE', metrics_dropdown, dates_dropdown)
-
-
-@app.callback(
-    Output(component_id='NEE_change', component_property='children'),
-    [Input(component_id='dates_dropdown', component_property='value'),
-     Input(component_id='metrics_dropdown', component_property='value')]
-)
-def update_output_div(dates_dropdown, metrics_dropdown):
-    return metric_change_week_on_week('EMEA - NEE', metrics_dropdown, dates_dropdown)
+# callbacks for weekly region totals and change
+[responsive_metrics(region) for region in region_names]
 
 
 # region line chart
@@ -226,14 +176,21 @@ def update_figure(selected_metric):
     traces = []
 
     for region in regions:
-        filtered_data_frame = df[df.region_x == region][['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
+        filtered_data_frame = df[df.region_x == region]\
+                [['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
         traces.append(go.Scatter(
             x=filtered_data_frame.week_start,
             y=filtered_data_frame[selected_metric],
             name=region[6:]
         ))
 
-    return {'data': traces, 'layout': go.Layout(title=selected_metric.replace('_', ' ').title(), autosize=True, hovermode='closest', legend={'orientation': 'h'},)}
+    return {'data': traces,
+            'layout': go.Layout(title=selected_metric.replace('_', ' ').title(),
+                                autosize=True,
+                                hovermode='closest',
+                                legend={'orientation': 'h'},
+                                )
+            }
 
 
 # sub-region line chart
@@ -253,15 +210,21 @@ def update_figure(hoverData, selected_metric):
     traces = []
 
     for sub_region in sub_regions:
-        filtered_data_frame = df[df.sub_region_x == sub_region][['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
+        filtered_data_frame = df[df.sub_region_x == sub_region]\
+                [['week_start', selected_metric]].groupby('week_start').agg('sum').reset_index()
         traces.append(go.Scatter(
             x=filtered_data_frame.week_start,
             y=filtered_data_frame[selected_metric],
             name=sub_region
         ))
 
-    return {'data': traces, 'layout': go.Layout(title=region[6:] + f': {selected_metric}'.replace('_', ' '), autosize=True, legend={'orientation':'h'})}
+    return {'data': traces,
+            'layout': go.Layout(title=region[6:] + f': {selected_metric}'.replace('_', ' '),
+                                autosize=True,
+                                legend={'orientation': 'h'}
+                                )
+            }
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
