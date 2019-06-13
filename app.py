@@ -9,6 +9,8 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 
+print(dcc.__version__)
+
 # import data
 df = pd.read_csv('uber-data.csv', infer_datetime_format=True, parse_dates=[0])
 df.week_start = pd.to_datetime(df.week_start, infer_datetime_format=True)
@@ -95,6 +97,18 @@ region_heading_style['width'] = '25%'
 metrics_style = default_style.copy()
 metrics_style['width'] = '12.5%'
 
+drilldown_title = default_style.copy()
+drilldown_title['width'] = '85%'
+drilldown_title['flex-direction'] = 'column'
+
+drilldown_abs_change = default_style.copy()
+drilldown_abs_change['width'] = '40%'
+drilldown_abs_change['flex-direction'] = 'row'
+
+drilldown_rel_change = default_style.copy()
+drilldown_rel_change['width'] = '40%'
+drilldown_rel_change['flex-direction'] = 'row'
+
 dropdown_style = {
     'margin-left': '2%',
     'margin-right': '2%',
@@ -102,6 +116,35 @@ dropdown_style = {
     'align': 'center',
     'display': 'inline',
 }
+
+metric_components = {
+    'trips_completed': ['requests', 'driver_cancelled', 'rider_cancelled'],
+    'requests': ['sessions', 'surged_trips']
+}
+
+def metric_drill_down(metric='trips_completed'):
+    result = [drill_down_unit(title=metric)]
+    components = [drill_down_unit(title=component) for component in metric_components[metric]]
+    #  hidden_components = [drill_down_unit(title=component, hidden=True) for component in metric_components[metric]]
+    result =  result + components
+    return result
+
+#  [html.Div(id=metric, children='start', style=metrics_style) for metric in metrics_for_each_region]
+def drill_down_unit(title='title', abs_change='abs_change', rel_change='rel_change', hidden=False):
+    return html.Div([
+        html.Div([
+            title
+            ], style=drilldown_title),
+        html.Div([
+            html.Div([
+                abs_change
+            ], style=drilldown_abs_change),
+            html.Div([
+                rel_change
+            ], style=drilldown_rel_change)
+        ], style={'display': 'flex', 'flexDirection': 'row', 'width': '100%'}),
+    ], id=f'id_{title}', style={'display': 'flex', 'flexDirection': 'column', 'width': '20%'})
+
 
 # page structure - uses flexbox for responsive design
 app.layout = html.Div([
@@ -146,14 +189,37 @@ app.layout = html.Div([
         html.Div([
             dcc.Graph(id="sub-regions", config={'displayModeBar': False}),
             ])
-    ], style={'display': 'flex', 'flexDirection': 'row'})
+    ], style={'display': 'flex', 'flexDirection': 'row'}),
 
-], style={'display': 'flex', 'flexDirection': 'column'})
+    # drill down element
+    html.Div([html.Button('Reset Chart', id='button_chart')
+        ],
+        className='one columns', style={'margin-top': '40'}
+    ),
+    html.Div([html.Button('Previous Level', id='back_button')
+        ],
+        className='one columns', style={'margin-top': '40', 'margin-left':'50'}
+    ),
+    html.Div([
+        dcc.Store(id='memory'),
+        html.Div(id='metric_explorer', children = metric_drill_down()
+        ,  style={'display': 'flex', 'flexDirection': 'row', 'width': '75%'}),
 
+    ], style={'display': 'flex', 'flexDirection': 'column'})
+    ])
 
 # callbacks for weekly region totals and change, must come after `app.layout` has been defined
 for region in region_names:
     responsive_metrics(region)
+
+
+# callbacks for drill down
+@app.callback(
+    Output(component_id='metric_explorer', component_property='children'),
+    [(Input(component_id=f'id_{each_metric}', component_property='children')) for each_metric in metric_components]
+)
+def drill_down(selected_metric):
+    return metric_drill_down(selected_metric)
 
 
 # callbacks for line charts
