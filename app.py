@@ -5,11 +5,13 @@ import pandas as pd
 
 import dash
 import dash_core_components as dcc
+import dash_cytoscape as cyto
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 
-print(dcc.__version__)
+# Load extra layouts
+cyto.load_extra_layouts()
 
 # import data
 df = pd.read_csv('uber-data.csv', infer_datetime_format=True, parse_dates=[0])
@@ -117,33 +119,76 @@ dropdown_style = {
     'display': 'inline',
 }
 
+node_style = dropdown_style.copy()
+node_style['width'] = '25%'
+node_style['align'] = 'left'
+
 metric_components = {
     'trips_completed': ['requests', 'driver_cancelled', 'rider_cancelled'],
     'requests': ['sessions', 'surged_trips']
 }
 
-def metric_drill_down(metric='trips_completed'):
-    result = [drill_down_unit(title=metric)]
-    components = [drill_down_unit(title=component) for component in metric_components[metric]]
-    #  hidden_components = [drill_down_unit(title=component, hidden=True) for component in metric_components[metric]]
-    result =  result + components
-    return result
+#  def metric_drill_down(metric='trips_completed'):
+#      result = [drill_down_unit(title=metric)]
+#      components = [drill_down_unit(title=component) for component in metric_components[metric]]
+#      #  hidden_components = [drill_down_unit(title=component, hidden=True) for component in metric_components[metric]]
+#      result =  result + components
+#      return result
+#
+#  #  [html.Div(id=metric, children='start', style=metrics_style) for metric in metrics_for_each_region]
+#  def drill_down_unit(title='title', abs_change='abs_change', rel_change='rel_change', hidden=False):
+#      return html.Div([
+#          html.Div([
+#              title
+#              ], style=drilldown_title),
+#          html.Div([
+#              html.Div([
+#                  abs_change
+#              ], style=drilldown_abs_change),
+#              html.Div([
+#                  rel_change
+#              ], style=drilldown_rel_change)
+#          ], style={'display': 'flex', 'flexDirection': 'row', 'width': '100%'}),
+#      ], id=f'id_{title}', style={'display': 'flex', 'flexDirection': 'column', 'width': '20%'})
 
-#  [html.Div(id=metric, children='start', style=metrics_style) for metric in metrics_for_each_region]
-def drill_down_unit(title='title', abs_change='abs_change', rel_change='rel_change', hidden=False):
-    return html.Div([
-        html.Div([
-            title
-            ], style=drilldown_title),
-        html.Div([
-            html.Div([
-                abs_change
-            ], style=drilldown_abs_change),
-            html.Div([
-                rel_change
-            ], style=drilldown_rel_change)
-        ], style={'display': 'flex', 'flexDirection': 'row', 'width': '100%'}),
-    ], id=f'id_{title}', style={'display': 'flex', 'flexDirection': 'column', 'width': '20%'})
+node_directions = {
+    'completed_trips': ['requests', 'driver cancel', 'rider cancel', 'unfulfilled trips'],
+    'requests': ['sessions', 'surged trips'],
+    'surged trips': ['apple', 'banana'],
+    'driver cancel': [],
+    'rider cancel': [],
+    'unfulfilled trips': [],
+    'sessions': [],
+}
+
+nodes = [
+    {
+        'data': {'id': id, 'label': label},
+    }
+    for id, label in (
+        ('completed trips', 'completed trips'),
+        ('requests', 'requests'),
+        ('driver cancel', 'driver cancel'),
+        ('rider cancel', 'rider cancel'),
+        ('sessions', 'sessions'),
+        ('surged trips', 'surged trips'),
+        ('apple', 'apple'),
+        ('banana', 'banana')
+    )
+]
+
+edges = [
+    {'data': {'source': source, 'target': target}}
+    for source, target in (
+        ('completed trips', 'requests'),
+        ('completed trips', 'driver cancel'),
+        ('completed trips', 'rider cancel'),
+        ('requests', 'sessions'),
+        ('requests', 'surged trips'),
+        ('surged trips', 'apple'),
+        ('surged trips', 'banana'),
+    )
+]
 
 
 # page structure - uses flexbox for responsive design
@@ -192,20 +237,41 @@ app.layout = html.Div([
     ], style={'display': 'flex', 'flexDirection': 'row'}),
 
     # drill down element
-    html.Div([html.Button('Reset Chart', id='button_chart')
-        ],
-        className='one columns', style={'margin-top': '40'}
-    ),
-    html.Div([html.Button('Previous Level', id='back_button')
-        ],
-        className='one columns', style={'margin-top': '40', 'margin-left':'50'}
+    html.Div(
+        dcc.Dropdown(
+            id='node_dropdown',
+            options=[{'label': i, 'value': i} for i in node_directions.keys()],
+            value=list(node_directions.keys())[0],
+            clearable=False,
+        ),
+        style={'width': '200px'}
     ),
     html.Div([
-        dcc.Store(id='memory'),
-        html.Div(id='metric_explorer', children = metric_drill_down()
-        ,  style={'display': 'flex', 'flexDirection': 'row', 'width': '75%'}),
-
-    ], style={'display': 'flex', 'flexDirection': 'column'})
+        cyto.Cytoscape(
+            id='metric_explorer',
+            layout={'name': 'breadthfirst', #dagre
+                    'fit': 'true',
+                    'maximal': 'false',
+                    'directed': 'true',
+                   },
+            style={'width': '70%', 'height': '400px'},
+            elements=nodes+edges,
+            stylesheet=[
+                {
+                    'selector': 'node',
+                    'style': {'label': 'data(label)',
+                    "text-wrap": "wrap",
+                    'font-size': 22,
+                             }}
+            ],
+                )
+    ])
+    #  html.Div([
+    #      dcc.Store(id='memory'),
+    #      html.Div(id='metric_explorer', children = metric_drill_down()
+    #      ,  style={'display': 'flex', 'flexDirection': 'row', 'width': '75%'}),
+    #
+    #  ], style={'display': 'flex', 'flexDirection': 'column'})
     ])
 
 # callbacks for weekly region totals and change, must come after `app.layout` has been defined
@@ -213,14 +279,47 @@ for region in region_names:
     responsive_metrics(region)
 
 
-# callbacks for drill down
 @app.callback(
-    Output(component_id='metric_explorer', component_property='children'),
-    [(Input(component_id=f'id_{each_metric}', component_property='children')) for each_metric in metric_components]
+    Output('metric_explorer', 'elements'),
+    [Input('dates_dropdown', 'value'),
+     Input('node_dropdown', 'value')]
 )
-def drill_down(selected_metric):
-    return metric_drill_down(selected_metric)
+def update_elements(dates_dropdown, node_dropdown):
+    current_week = datetime.strptime(dates_dropdown, '%Y-%m-%d')
+    def get_abs_change(date, metric):
+        previous_week = current_week - td(days=7)
+        weekly_total = df[df.week_start == current_week][[node_dropdown]].sum().item()
+        previous_weekly_total = df[df.week_start == previous_week][[node_dropdown]].sum().item()
+        change = 100 * ((weekly_total - previous_weekly_total) / previous_weekly_total)
+        string = f' \nabs: {round(weekly_total,0)} change: {round(change,2)}%'
+        return string
 
+    node_list = [node_dropdown] + node_directions[node_dropdown]
+    for node in node_directions[node_dropdown]:
+        node_list = node_list + node_directions[node]
+    nodes = (
+        {
+            'data': {'id': id, 'label': label},
+        }
+        for id, label in ([(i,i+get_abs_change(dates_dropdown, i)) for i in node_list])
+    )
+    edges = [
+        {'data': {'source': source, 'target': target}}
+        for source, target in (
+        (parent, child) for parent in node_directions for child in node_directions[parent]
+        )
+    ]
+    elements = list(nodes) + list(edges)
+    return elements
+
+
+#  # callbacks for drill down
+#  @app.callback(
+#      Output(component_id='metric_explorer', component_property='children'),
+#      [(Input(component_id=f'id_{each_metric}', component_property='children')) for each_metric in metric_components]
+#  )
+#  def drill_down(selected_metric):
+#      return metric_drill_down(selected_metric)
 
 # callbacks for line charts
 @app.callback(
