@@ -282,10 +282,11 @@ for region in region_names:
 @app.callback(
     Output('metric_explorer', 'elements'),
     [Input('dates_dropdown', 'value'),
-     Input('node_dropdown', 'value')]
+     Input('metric_explorer', 'tapNodeData')]
 )
-def update_elements(dates_dropdown, node_dropdown):
+def update_elements(dates_dropdown, tapNodeData):
     current_week = datetime.strptime(dates_dropdown, '%Y-%m-%d')
+    print(f'node: {tapNodeData}')
     def get_abs_change(date, metric):
         previous_week = current_week - td(days=7)
         weekly_total = df[df.week_start == current_week][[node_dropdown]].sum().item()
